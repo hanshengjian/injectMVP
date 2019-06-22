@@ -4,6 +4,8 @@ import android.app.Application;
 import android.util.Log;
 
 import com.ca.annotation.AutoWired;
+import com.ca.annotation.Const;
+import com.ca.annotation.model.Meta;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -28,7 +30,7 @@ public class InjectManager {
     public void init(Application application) {
         mApplication = application;
         try {
-            Class<?> threadClazz = Class.forName("com.ca.annotationlib.InjectTable");
+            Class<?> threadClazz = Class.forName(Const.PACKGE_NAME + "." + Const.CLASS_NAME);
             Method method = threadClazz.getMethod("init");
             method.invoke(null);
         } catch (Exception e) {
@@ -49,10 +51,10 @@ public class InjectManager {
                 Object instance;
                 try {
                     String key = field.getType().getName();
-                    Class<?> threadClazz = Class.forName("com.ca.annotationlib.InjectTable");
+                    Class<?> threadClazz = Class.forName(Const.PACKGE_NAME + "." + Const.CLASS_NAME);
                     Method method = threadClazz.getMethod("getServiceImpl", String.class);
-
-                    instance = Class.forName((String) method.invoke(null, key)).newInstance();
+                    Meta meta = (Meta) method.invoke(null,key);
+                    instance = Class.forName(meta.getPath()).newInstance();
                     field.set(obj, instance);
                 } catch (InstantiationException e) {
                     Log.i(TAG,"inject failed: " + e.getMessage());

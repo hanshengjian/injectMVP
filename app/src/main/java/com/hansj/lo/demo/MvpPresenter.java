@@ -8,13 +8,13 @@ import com.ca.annotationapi.InjectManager;
  * @author Lenovo
  * DATE 2019/6/16
  */
-@Compont(key = IPresenter.KEY)
-public class MVPPresenter implements IPresenter {
+@Compont(version = 1)
+public class MvpPresenter implements IPresenter {
     private IView mIView;
     @AutoWired
     public IModule mIModule;
 
-    public MVPPresenter(){
+    public MvpPresenter(){
         init();
     }
 

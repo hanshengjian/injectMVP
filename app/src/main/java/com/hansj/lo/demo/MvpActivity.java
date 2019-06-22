@@ -11,7 +11,7 @@ import com.ca.annotationapi.InjectManager;
  * @author Lenovo
  * DATE 2019/6/16
  */
-public class MVPActivity extends AppCompatActivity implements IView{
+public class MvpActivity extends AppCompatActivity implements IView{
 
     @AutoWired
     IPresenter mPresenter;

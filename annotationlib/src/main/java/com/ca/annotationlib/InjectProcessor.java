@@ -1,6 +1,8 @@
 package com.ca.annotationlib;
 
 import com.ca.annotation.Compont;
+import com.ca.annotation.Const;
+import com.ca.annotation.model.Meta;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
@@ -11,11 +13,13 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
+import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
@@ -24,6 +28,8 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic;
 
 /**
  * @author Lenovo
@@ -34,20 +40,22 @@ import javax.lang.model.element.TypeElement;
 public class InjectProcessor extends AbstractProcessor {
 
     private Filer mFiler;
-    private HashMap<String, String> results;
+    private HashMap<String, Meta> results;
+    private Messager messager;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnvironment) {
         super.init(processingEnvironment);
         mFiler = processingEnvironment.getFiler();
         results = new HashMap<>();
+        messager = processingEnvironment.getMessager();
     }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        System.out.println("--------start process--------");
-        for (TypeElement element:annotations){
-            if(element.getQualifiedName().toString().equals(Compont.class.getName())){
+        for (TypeElement element : annotations) {
+            if (element.getQualifiedName().toString().equals(Compont.class.getName())) {
+                messager.printMessage(Diagnostic.Kind.NOTE, "--------start process--------");
                 handleRegisterRouter(roundEnv);
                 return true;
             }
@@ -72,28 +80,44 @@ public class InjectProcessor extends AbstractProcessor {
         for (Element element : set) {
             if (element.getKind() == ElementKind.CLASS) {
                 TypeElement typeElement = (TypeElement) element;
+                List<? extends TypeMirror> interfaces = ((TypeElement) element).getInterfaces();
 
-                String key = typeElement.getAnnotation(Compont.class).key();
+                for (TypeMirror typeMirror : interfaces) {
+                    if (results.containsKey(typeMirror.toString())) {
+                        Meta meta = results.get(typeMirror.toString());
+                        int version = meta.getVersion();
+                        int newVersion = element.getAnnotation(Compont.class).version();
+                        /**
+                         * 保留高版本，删除低版本
+                         */
+                        if (newVersion > version) {
+                            results.remove(typeMirror.toString());
+                            Meta newMeta = new Meta(typeElement.getQualifiedName().toString(), newVersion);
+                            results.put(typeMirror.toString(), newMeta);
+                        }
+                    } else {
+                        int version = element.getAnnotation(Compont.class).version();
+                        Meta meta = new Meta(typeElement.getQualifiedName().toString(), version);
+                        results.put(typeMirror.toString(), meta);
+                    }
 
-                results.put(key, typeElement.getQualifiedName().toString());
+                }
             }
         }
 
         try {
-            String pkgName = "com.ca.annotationlib";
-            String className = "InjectTable";
-            String methodName = "getServiceImpl";
-            FieldSpec fieldSpec = FieldSpec.builder(ClassName.get(HashMap.class), "injectMap", Modifier.PUBLIC,Modifier.STATIC)
+            FieldSpec fieldSpec = FieldSpec.builder(ClassName.get(HashMap.class), "injectMap", Modifier.PUBLIC, Modifier.STATIC)
                     .build();
-            MethodSpec registerRouter = computeAddRouter(methodName);
+            MethodSpec registerRouter = computeAddRouter();
             MethodSpec initMethod = generateInit();
 
-            TypeSpec routerManger = TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC)
+            TypeSpec routerManger = TypeSpec.classBuilder(Const.CLASS_NAME).addModifiers(Modifier.PUBLIC)
                     .addField(fieldSpec)
                     .addMethod(registerRouter)
                     .addMethod(initMethod)
+                    .addJavadoc("Inject Table provides a map")
                     .build();
-            JavaFile javaFile = JavaFile.builder(pkgName, routerManger).build();
+            JavaFile javaFile = JavaFile.builder(Const.PACKGE_NAME, routerManger).build();
             javaFile.writeTo(mFiler);
         } catch (Exception e) {
 
@@ -102,25 +126,27 @@ public class InjectProcessor extends AbstractProcessor {
 
     }
 
-    private MethodSpec computeAddRouter(String methodName) {
-        return MethodSpec.methodBuilder(methodName).addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+    private MethodSpec computeAddRouter() {
+        return MethodSpec.methodBuilder("getServiceImpl").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .returns(Object.class)
-                .addParameter(ParameterSpec.builder(String.class,"key").build())
+                .addParameter(ParameterSpec.builder(String.class, "key").build())
                 .addStatement("return injectMap.get(key)")
                 .build();
 
     }
 
     private MethodSpec generateInit() {
-        Set<Map.Entry<String,String>> set = results.entrySet();
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("injectMap = new HashMap();\n");
-        for (Map.Entry entry:set){
-            stringBuilder.append("injectMap.put(\""+entry.getKey()+"\",\""+entry.getValue()+"\");\n");
+        MethodSpec.Builder initBuilder = MethodSpec.methodBuilder("init").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(void.class);
+
+        Set<Map.Entry<String, Meta>> set = results.entrySet();
+        initBuilder.addStatement("injectMap = new HashMap()");
+        for (Map.Entry entry : set) {
+            Meta meta = (Meta) entry.getValue();
+            initBuilder.addStatement("injectMap.put(\"" + entry.getKey() + "\",$T.build(\"" + meta.getPath() + "\"," + meta.getVersion() + "))",
+                    ClassName.get(Meta.class));
         }
-        return MethodSpec.methodBuilder("init").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addStatement(stringBuilder.toString())
-                .returns(void.class)
+        return initBuilder
                 .build();
     }
 
