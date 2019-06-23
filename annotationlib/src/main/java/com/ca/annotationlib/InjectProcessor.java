@@ -9,10 +9,12 @@ import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 
-import org.omg.CosNaming.NamingContextPackage.NotEmpty;
+import org.apache.commons.collections4.CollectionUtils;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,7 +38,7 @@ import javax.tools.Diagnostic;
 /**
  * @author Lenovo
  * DATE 2019/6/16
- * @description
+ * @description A processor create a class file by javapoet for injecting table
  */
 @AutoService(Processor.class)
 public class InjectProcessor extends AbstractProcessor {
@@ -55,11 +57,14 @@ public class InjectProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        for (TypeElement element : annotations) {
-            if (element.getQualifiedName().toString().equals(Compont.class.getName())) {
-                handleRegisterRouter(roundEnv);
-                return true;
+        if (CollectionUtils.isNotEmpty(annotations)) {
+            try {
+                handleRegisterCompont(roundEnv);
+            } catch (Exception e) {
+                messager.printMessage(Diagnostic.Kind.ERROR, "handling annotation " +
+                        "Compont.class make a exception:  " + e.getMessage());
             }
+            return true;
         }
         return false;
     }
@@ -76,7 +81,7 @@ public class InjectProcessor extends AbstractProcessor {
         return SourceVersion.latestSupported();
     }
 
-    private void handleRegisterRouter(RoundEnvironment roundEnv) {
+    private void handleRegisterCompont(RoundEnvironment roundEnv) {
         Set<? extends Element> set = roundEnv.getElementsAnnotatedWith(Compont.class);
         for (Element element : set) {
             if (element.getKind() == ElementKind.CLASS) {
@@ -102,46 +107,53 @@ public class InjectProcessor extends AbstractProcessor {
                     }
 
                 }
-                if (interfaces == null || interfaces.size() == 0) {
+                if (CollectionUtils.isEmpty(interfaces)) {
                     String key = typeElement.getAnnotation(Compont.class).key();
                     int version = typeElement.getAnnotation(Compont.class).version();
-                    if(!"".equals(key)) {
-                       if(results.containsKey(key)){
-                           int oldversion = results.get(key).getVersion();
-                           if(version>oldversion){
-                               results.remove(key);
-                               results.put(key,new Meta(typeElement.getQualifiedName().toString(),version));
-                           }
-                       }
+                    if (!"".equals(key)) {
+                        if (results.containsKey(key)) {
+                            int oldversion = results.get(key).getVersion();
+                            if (version > oldversion) {
+                                results.remove(key);
+                                results.put(key, new Meta(typeElement.getQualifiedName().toString(), version));
+                            }
+                        }
                     }
                 }
             }
         }
 
+
+
+        createClass();
+    }
+
+    private void createClass(){
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(HashMap.class,String.class,Meta.class);
+
+        FieldSpec fieldSpec = FieldSpec.builder(parameterizedTypeName, "injectMap", Modifier.PUBLIC, Modifier.STATIC)
+                .build();
+        MethodSpec registerRouter = computeAddRouter();
+        MethodSpec initMethod = generateInit();
+
+        TypeSpec routerManger = TypeSpec.classBuilder(Const.CLASS_NAME).addModifiers(Modifier.PUBLIC)
+                .addField(fieldSpec)
+                .addMethod(registerRouter)
+                .addMethod(initMethod)
+                .addJavadoc("Inject Table provides a map")
+                .build();
+        JavaFile javaFile = JavaFile.builder(Const.PACKGE_NAME, routerManger).build();
         try {
-            FieldSpec fieldSpec = FieldSpec.builder(ClassName.get(HashMap.class), "injectMap", Modifier.PUBLIC, Modifier.STATIC)
-                    .build();
-            MethodSpec registerRouter = computeAddRouter();
-            MethodSpec initMethod = generateInit();
-
-            TypeSpec routerManger = TypeSpec.classBuilder(Const.CLASS_NAME).addModifiers(Modifier.PUBLIC)
-                    .addField(fieldSpec)
-                    .addMethod(registerRouter)
-                    .addMethod(initMethod)
-                    .addJavadoc("Inject Table provides a map")
-                    .build();
-            JavaFile javaFile = JavaFile.builder(Const.PACKGE_NAME, routerManger).build();
             javaFile.writeTo(mFiler);
-        } catch (Exception e) {
-
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
 
     }
 
     private MethodSpec computeAddRouter() {
         return MethodSpec.methodBuilder("getServiceImpl").addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(Object.class)
+                .returns(Meta.class)
                 .addParameter(ParameterSpec.builder(String.class, "key").build())
                 .addStatement("return injectMap.get(key)")
                 .build();
@@ -153,7 +165,7 @@ public class InjectProcessor extends AbstractProcessor {
                 .returns(void.class);
 
         Set<Map.Entry<String, Meta>> set = results.entrySet();
-        initBuilder.addStatement("injectMap = new HashMap()");
+        initBuilder.addStatement("injectMap = new HashMap<$T,Meta>()",ClassName.get(String.class));
         for (Map.Entry entry : set) {
             Meta meta = (Meta) entry.getValue();
             initBuilder.addStatement("injectMap.put(\"" + entry.getKey() + "\",$T.build(\"" + meta.getPath() + "\"," + meta.getVersion() + "))",
