@@ -35,7 +35,7 @@ public class InjectManager {
             method.invoke(null);
         } catch (Exception e) {
             initSucc = false;
-            Log.i(TAG, "init failed");
+            Log.i(TAG, "init failed :" + e.getMessage());
         }
     }
 

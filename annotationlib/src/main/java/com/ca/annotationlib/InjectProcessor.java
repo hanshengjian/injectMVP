@@ -11,6 +11,8 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeSpec;
 
+import org.omg.CosNaming.NamingContextPackage.NotEmpty;
+
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -55,7 +57,6 @@ public class InjectProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (TypeElement element : annotations) {
             if (element.getQualifiedName().toString().equals(Compont.class.getName())) {
-                messager.printMessage(Diagnostic.Kind.NOTE, "--------start process--------");
                 handleRegisterRouter(roundEnv);
                 return true;
             }
@@ -81,7 +82,6 @@ public class InjectProcessor extends AbstractProcessor {
             if (element.getKind() == ElementKind.CLASS) {
                 TypeElement typeElement = (TypeElement) element;
                 List<? extends TypeMirror> interfaces = ((TypeElement) element).getInterfaces();
-
                 for (TypeMirror typeMirror : interfaces) {
                     if (results.containsKey(typeMirror.toString())) {
                         Meta meta = results.get(typeMirror.toString());
@@ -101,6 +101,19 @@ public class InjectProcessor extends AbstractProcessor {
                         results.put(typeMirror.toString(), meta);
                     }
 
+                }
+                if (interfaces == null || interfaces.size() == 0) {
+                    String key = typeElement.getAnnotation(Compont.class).key();
+                    int version = typeElement.getAnnotation(Compont.class).version();
+                    if(!"".equals(key)) {
+                       if(results.containsKey(key)){
+                           int oldversion = results.get(key).getVersion();
+                           if(version>oldversion){
+                               results.remove(key);
+                               results.put(key,new Meta(typeElement.getQualifiedName().toString(),version));
+                           }
+                       }
+                    }
                 }
             }
         }

@@ -18,5 +18,7 @@ public @interface Compont {
     */
    public int version();
 
+   public String key() default "";
+
 
 }

@@ -10,7 +10,7 @@ import com.ca.annotationapi.InjectManager;
  */
 @Compont(version = 2)
 public class MvpPresenter2 implements IPresenter {
-    private IView mIView;
+    protected IView mIView;
     @AutoWired
     public IModule mIModule;
 
