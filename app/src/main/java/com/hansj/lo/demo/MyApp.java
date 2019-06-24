@@ -1,7 +1,7 @@
 package com.hansj.lo.demo;
 
 import android.app.Application;
-import com.ca.annotationapi.InjectManager;
+import com.ca.api.InjectManager;
 /**
  * @author Lenovo
  * DATE 2019/6/16

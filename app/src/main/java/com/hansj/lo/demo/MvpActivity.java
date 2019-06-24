@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.ca.annotation.AutoWired;
-import com.ca.annotationapi.InjectManager;
+import com.ca.api.InjectManager;
 
 /**
  * @author Lenovo

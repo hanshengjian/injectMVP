@@ -1,1 +1,1 @@
-include ':app',  ':annotationlib', ':annotation', ':annotationapi'
+include ':app', ':inject-compile', ':inject-annotation', ':inject-api'

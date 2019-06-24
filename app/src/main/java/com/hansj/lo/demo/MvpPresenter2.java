@@ -2,7 +2,7 @@ package com.hansj.lo.demo;
 
 import com.ca.annotation.AutoWired;
 import com.ca.annotation.Compont;
-import com.ca.annotationapi.InjectManager;
+import com.ca.api.InjectManager;
 
 /**
  * @author Lenovo
