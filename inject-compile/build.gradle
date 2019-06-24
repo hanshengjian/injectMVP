@@ -1,15 +1,5 @@
 apply plugin: 'java-library'
-apply plugin: 'com.novoda.bintray-release'
 
-
-publish {
-    userOrg = '组织ID' //bintray账户下某个组织id
-    groupId = 'com.openxu.viewlib' //maven仓库下库的包名，一般为模块包名
-    artifactId = 'OXViewLib' //项目名称
-    publishVersion = '1.0.2' //版本号
-    desc = 'custom chart for android' //项目介绍，可以不写
-    website = '' //项目主页，可以不写
-}
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -24,3 +14,14 @@ compileJava {
     targetCompatibility = '1.7'
 }
 
+apply plugin: 'com.novoda.bintray-release'
+
+
+publish {
+    userOrg = 'josehan1989' //bintray账户下某个组织id
+    groupId = 'com.ca.inject' //maven仓库下库的包名，一般为模块包名
+    artifactId = 'compile' //项目名称
+    publishVersion = '1.0.1' //版本号
+    desc = '' //项目介绍，可以不写
+    website = '' //项目主页，可以不写
+}

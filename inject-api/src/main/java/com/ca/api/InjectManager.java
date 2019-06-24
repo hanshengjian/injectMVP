@@ -14,21 +14,19 @@ import java.lang.reflect.Method;
 /**
  * @author Lenovo
  * DATE 2019/6/16
- * @description 这是一个注入的管理类，反射执行初始化，从注入表中取出注入类的全路径，构造实例
+ *  This is an injection management class. Reflection performs initialization,
+ * extracts the full path of the injection class from the injection table, and constructs an instance.
  *
  */
 public class InjectManager {
 
     private final static String TAG = "InjectManager";
     private static volatile InjectManager mInstance;
-    private Application mApplication;
     private boolean initSucc = true;
-
     private InjectManager() {
     }
 
     public void init(Application application) {
-        mApplication = application;
         try {
             Class<?> threadClazz = Class.forName(Const.PACKGE_NAME + "." + Const.CLASS_NAME);
             Method method = threadClazz.getMethod("init");

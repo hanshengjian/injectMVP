@@ -38,7 +38,7 @@ import javax.tools.Diagnostic;
 /**
  * @author Lenovo
  * DATE 2019/6/16
- * @description A processor create a class file by javapoet for injecting table
+ *  A processor create a class file by javapoet for injecting table
  */
 @AutoService(Processor.class)
 public class InjectProcessor extends AbstractProcessor {
@@ -93,7 +93,7 @@ public class InjectProcessor extends AbstractProcessor {
                         int version = meta.getVersion();
                         int newVersion = element.getAnnotation(Compont.class).version();
                         /**
-                         * 保留高版本，删除低版本
+                         * Retain the high version and delete the low version
                          */
                         if (newVersion > version) {
                             results.remove(typeMirror.toString());

@@ -31,3 +31,13 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     api project(':inject-annotation')
 }
+apply plugin: 'com.novoda.bintray-release'
+
+publish {
+    userOrg = 'josehan1989' //bintray账户下某个组织id
+    groupId = 'com.ca.inject' //maven仓库下库的包名，一般为模块包名
+    artifactId = 'api' //项目名称
+    publishVersion = '1.0.1' //版本号
+    desc = '' //项目介绍，可以不写
+    website = '' //项目主页，可以不写
+}
