@@ -123,7 +123,7 @@ allprojects {
 
 #### In the last
 
-I hope to improve together width you
+I hope to improve together with you
 
 
 
