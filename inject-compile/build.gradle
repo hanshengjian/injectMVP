@@ -6,7 +6,7 @@ dependencies {
     implementation 'com.google.auto.service:auto-service:1.0-rc5'
     implementation 'com.squareup:javapoet:1.9.0'
     implementation 'org.apache.commons:commons-collections4:4.1'
-    api project(':inject-annotation')
+    implementation 'com.ca.inject:annotation:1.0.1'
 }
 
 compileJava {
@@ -21,7 +21,7 @@ publish {
     userOrg = 'josehan1989' //bintray账户下某个组织id
     groupId = 'com.ca.inject' //maven仓库下库的包名，一般为模块包名
     artifactId = 'compile' //项目名称
-    publishVersion = '1.0.1' //版本号
+    publishVersion = '1.0.2' //版本号
     desc = '' //项目介绍，可以不写
     website = '' //项目主页，可以不写
 }

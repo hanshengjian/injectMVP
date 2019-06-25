@@ -3,9 +3,19 @@ apply plugin: 'java-library'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
-
 compileJava {
     sourceCompatibility = '1.7'
     targetCompatibility = '1.7'
+}
+
+apply plugin: 'com.novoda.bintray-release'
+
+publish {
+    userOrg = 'josehan1989' //bintray账户下某个组织id
+    groupId = 'com.ca.inject' //maven仓库下库的包名，一般为模块包名
+    artifactId = 'annotation' //项目名称
+    publishVersion = '1.0.1' //版本号
+    desc = '' //项目介绍，可以不写
+    website = '' //项目主页，可以不写
 }
 
