@@ -2,7 +2,7 @@
 
 #### 项目背景
 
-依赖注入或者控制反转思想已经体现在了java web开发的spring框架中，在android中有关注入的开源项目主要有Dagger2还有Arouter.这个项目比较优秀。在android中MVP是最合适使用依赖注入的。但Dagger2有一个缺点，就是比较繁琐，这个框架就是简化这个过程，达到轻量级的效果。
+依赖注入或者控制反转思想已经体现在了java web的spring框架中，在android中有关注入的开源项目主要有Dagger2,还有Arouter,但arouter不是专门去做注入的工作，暂不比较.Dagger2比较优秀。在android中MVP是最合适使用依赖注入的。但Dagger2有一个缺点，就是比较繁琐，这个框架就是简化这个过程，达到轻量级的效果。
 
 
 
