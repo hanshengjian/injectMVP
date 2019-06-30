@@ -10,9 +10,8 @@ import com.ca.annotation.Compont;
  *
  * </>
  */
-@Compont(version = 3,key = MvpPresenter3.KEY)
+@Compont(version = 3,key = IPresenter.class)
 public class MvpPresenter3 extends MvpPresenter2 {
-    public static final String KEY = "com.hansj.lo.demo.IPresenter";
 
     public MvpPresenter3(){
         init();

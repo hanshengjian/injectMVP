@@ -18,7 +18,7 @@ public @interface Compont {
     */
    public int version();
 
-   public String key() default "";
+   public Class<?> key() default IBase.class;
 
 
 }

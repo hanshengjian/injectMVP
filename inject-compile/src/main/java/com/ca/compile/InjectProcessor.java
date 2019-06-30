@@ -28,17 +28,21 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 
 /**
  * @author Lenovo
  * DATE 2019/6/16
- *  A processor create a class file by javapoet for injecting table
+ * A processor create a class file by javapoet for injecting table
  */
 @AutoService(Processor.class)
 public class InjectProcessor extends AbstractProcessor {
@@ -108,28 +112,42 @@ public class InjectProcessor extends AbstractProcessor {
 
                 }
                 if (CollectionUtils.isEmpty(interfaces)) {
-                    String key = typeElement.getAnnotation(Compont.class).key();
-                    int version = typeElement.getAnnotation(Compont.class).version();
-                    if (!"".equals(key)) {
-                        if (results.containsKey(key)) {
-                            int oldversion = results.get(key).getVersion();
-                            if (version > oldversion) {
-                                results.remove(key);
-                                results.put(key, new Meta(typeElement.getQualifiedName().toString(), version));
+                    for(AnnotationMirror annotationMirror : typeElement.getAnnotationMirrors()){
+                        int version = 0;
+                        String key = "";
+                        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
+                                annotationMirror.getElementValues().entrySet()) {
+                            if("version".equals(entry.getKey().getSimpleName().toString())){
+                                version = Integer.parseInt(entry.getValue().getValue().toString());
+                            }
+                            if("key".equals(entry.getKey().getSimpleName().toString())){
+                                key = entry.getValue().getValue().toString();
+                            }
+                        }
+                        if (!"".equals(key)) {
+                            if (results.containsKey(key)) {
+                                int oldversion = results.get(key).getVersion();
+                                if (version > oldversion) {
+                                    results.remove(key);
+                                    results.put(key, new Meta(typeElement.getQualifiedName().toString(), version));
+                                }
                             }
                         }
                     }
+
+//                    String key = typeElement.getAnnotation(Compont.class).key().getName();
+//                    int version = typeElement.getAnnotation(Compont.class).version();
+
                 }
             }
         }
 
 
-
         createClass();
     }
 
-    private void createClass(){
-        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(HashMap.class,String.class,Meta.class);
+    private void createClass() {
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(HashMap.class, String.class, Meta.class);
 
         FieldSpec fieldSpec = FieldSpec.builder(parameterizedTypeName, "injectMap", Modifier.PUBLIC, Modifier.STATIC)
                 .build();
@@ -165,7 +183,7 @@ public class InjectProcessor extends AbstractProcessor {
                 .returns(void.class);
 
         Set<Map.Entry<String, Meta>> set = results.entrySet();
-        initBuilder.addStatement("injectMap = new HashMap<$T,Meta>()",ClassName.get(String.class));
+        initBuilder.addStatement("injectMap = new HashMap<$T,Meta>()", ClassName.get(String.class));
         for (Map.Entry entry : set) {
             Meta meta = (Meta) entry.getValue();
             initBuilder.addStatement("injectMap.put(\"" + entry.getKey() + "\",$T.build(\"" + meta.getPath() + "\"," + meta.getVersion() + "))",
