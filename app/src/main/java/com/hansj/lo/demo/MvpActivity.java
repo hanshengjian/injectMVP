@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.ca.annotation.AutoWired;
+import com.ca.annotation.InjectAt;
 import com.ca.api.InjectManager;
 
 /**
@@ -18,6 +19,7 @@ public class MvpActivity extends AppCompatActivity implements IView{
     TextView tv;
 
     @Override
+    @InjectAt
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mvp);
