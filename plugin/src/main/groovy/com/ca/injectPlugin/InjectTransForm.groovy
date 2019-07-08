@@ -15,6 +15,7 @@ import javassist.CtClass
 import javassist.CtMethod
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project;
+import org.apache.commons.codec.digest.DigestUtils
 
 class InjectTransForm extends Transform {
     private Project mProject;
@@ -50,33 +51,47 @@ class InjectTransForm extends Transform {
 
         mClassPool = new ClassPool()
         mProject.android.bootClasspath.each {
-            classPool.appendClassPath((String) it.absolutePath)
+            println("bootClasspath:" + it.absolutePath)
+            mClassPool.appendClassPath((String) it.absolutePath)
         }
 
         transformInvocation.inputs.each {
             TransformInput inputs ->
                 inputs.jarInputs.each {
                     JarInput jarInput ->
-                        def dest = transformInvocation.outputProvider.getContentLocation(jarName + md5Name,
-                                jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                        //将输入内容复制到输出
+// 重命名输出文件（同目录copyFile会冲突）
+                        File dest = transformInvocation.outputProvider.getContentLocation(jarInput.name, jarInput.contentTypes, jarInput.scopes, Format.JAR)
+                        // 复制jar到目标目录
                         FileUtils.copyFile(jarInput.file, dest)
+
+                        mClassPool.appendClassPath(dest.toString())
+
+                        println("jar = " + dest)
+
                 }
                 inputs.directoryInputs.each {
                     DirectoryInput directoryInput ->
                         String fileName = directoryInput.file.absolutePath;
                         File dir = new File(fileName)
+
+                        mClassPool.appendClassPath(fileName)
+                        mClassPool.appendClassPath(mProject.android.bootClasspath[0].toString())
+                        mClassPool.importPackage("android.os.Bundle")
                         dir.eachFileRecurse {
                             File file ->
-                                CtClass ctClass = mClassPool.makeClass(new FileInputStream(file))
-                                CtMethod ctMethod = ctClass.getDeclaredMethod("onCreate",
-                                        [mClassPool.makeClass("android.os.Bundle")])
-                                if (ctMethod.getAnnotation(InjectAt.class) != null) {
-                                    //开始 注入代码
-                                    String str = """ InjectManager.getInstance().inject(this);"""
-                                    ctMethod.insertAfter(str);
-                                    ctClass.writeFile(dir)
-                                    ctClass.detach()
+                                println("绝对路径：" + file.getAbsolutePath())
+                                if (file.getName().equals("MvpActivity.class")) {
+                                    CtClass ctClass = mClassPool.getCtClass("com.hansj.lo.demo.MvpActivity")
+                                    CtMethod ctMethod = ctClass.getDeclaredMethod("onCreate")
+                                    println("方法名：" + ctMethod)
+                                    if (ctMethod.getAnnotation(InjectAt.class) != null) {
+                                        //开始 注入代码
+                                        String str = """ com.ca.api.InjectManager.getInstance().inject(this);"""
+                                        ctMethod.insertAfter(str);
+                                        ctClass.writeFile(fileName)
+                                        ctClass.detach()
+                                    }
+
                                 }
 
                         }
