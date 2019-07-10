@@ -9,6 +9,7 @@ import com.android.build.api.transform.TransformException
 import com.android.build.api.transform.TransformInput
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
+import com.android.SdkConstants
 import com.ca.annotation.InjectAt
 import javassist.ClassPool
 import javassist.CtClass
@@ -16,6 +17,8 @@ import javassist.CtMethod
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project;
 import org.apache.commons.codec.digest.DigestUtils
+
+import java.lang.annotation.Annotation
 
 class InjectTransForm extends Transform {
     private Project mProject;
@@ -66,7 +69,7 @@ class InjectTransForm extends Transform {
 
                         mClassPool.appendClassPath(dest.toString())
 
-                        println("jar = " + dest)
+                       // println("jar = " + dest)
 
                 }
                 inputs.directoryInputs.each {
@@ -76,28 +79,40 @@ class InjectTransForm extends Transform {
 
                         mClassPool.appendClassPath(fileName)
                         mClassPool.appendClassPath(mProject.android.bootClasspath[0].toString())
-                        mClassPool.importPackage("android.os.Bundle")
+                     //   mClassPool.importPackage("android.os.Bundle")
                         dir.eachFileRecurse {
                             File file ->
-                                println("绝对路径：" + file.getAbsolutePath())
-                                if (file.getName().equals("MvpActivity.class")) {
-                                    CtClass ctClass = mClassPool.getCtClass("com.hansj.lo.demo.MvpActivity")
-                                    CtMethod ctMethod = ctClass.getDeclaredMethod("onCreate")
-                                    println("方法名：" + ctMethod)
-                                    if (ctMethod.getAnnotation(InjectAt.class) != null) {
-                                        //开始 注入代码
-                                        String str = """ com.ca.api.InjectManager.getInstance().inject(this);"""
-                                        ctMethod.insertAfter(str);
-                                        ctClass.writeFile(fileName)
-                                        ctClass.detach()
+                                String filePath = file.absolutePath
+                                def className = filePath.replace(fileName, "")
+                                        .replace("\\", ".")
+                                        .replace("/", ".")
+                                def name = className.replace(SdkConstants.DOT_CLASS, "")
+                                        .substring(1)
+
+                               // println("className:" + className + ": name;" + name )
+                                if (className.endsWith(".class") && !className.contains('R$') && !className.contains('$')//代理类
+                                        && !className.contains('R.class') && !className.contains("BuildConfig.class")){
+                                    CtClass ctClass = mClassPool.getCtClass(name)
+                                    CtMethod[] ctMethods = ctClass.getDeclaredMethods()
+                                    for (CtMethod ctMethod:ctMethods){
+                                        String method = ctMethod.getName();
+                                        println("xxmethod:" + method)
+                                        if(method.contains(Const.METHOD_NAME_INJECT)){
+                                            for (Annotation annotation:ctMethod.getAnnotations()){
+                                                if(annotation.annotationType().canonicalName.equals(Const.ANNOTATION_NAME_INJECT)){
+                                                    ctMethod.insertBefore(Const.CODE_INJECT);
+                                                    ctClass.writeFile(fileName)
+                                                    ctClass.detach()
+                                                }
+                                            }
+                                        }
                                     }
-
                                 }
-
                         }
                         def dest = transformInvocation.outputProvider.getContentLocation(directoryInput.name,
                                 directoryInput.contentTypes,
                                 directoryInput.scopes, Format.DIRECTORY)
+                        println("xxdest" + dest)
                         // 将input的目录复制到output指定目录
                         FileUtils.copyDirectory(directoryInput.file, dest)
 

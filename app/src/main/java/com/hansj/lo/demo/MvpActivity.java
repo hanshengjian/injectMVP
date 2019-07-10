@@ -23,7 +23,6 @@ public class MvpActivity extends AppCompatActivity implements IView{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mvp);
-        InjectManager.getInstance().inject(this);
         mPresenter.bind(this);
         tv = findViewById(R.id.tv);
         mPresenter.getTitle();
